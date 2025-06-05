@@ -32,7 +32,7 @@ This setup allows the "Hemingway Helper" to run directly from within a specific 
 3.  Go back to the editor (the code icon `< >` on the left sidebar). You should now see `appsscript.json` in your file list.
 4.  Replace the default contents with [appsscript.json](appsscript.json).
 
-### **Step 5: Save and Run `onOpen()`**
+### **Step 5: Save and Run**
 
 1.  Click the **"Save project"** icon (💾) in the toolbar.
 2.  Go back to your Google Doc.
