@@ -17,20 +17,20 @@ This setup allows the "Hemingway Helper" to run directly from within a specific 
 ### **Step 2: Create `Code.gs`**
 
 1.  In the Apps Script editor, you should see a file named `Code.gs` by default. If not, click **File > New > Script file**.
-2.  Replace the default contents with the code in [Code.gs](Code.gs).
+2.  Replace the default contents with [Code.gs](Code.gs).
 
 ### **Step 3: Create `SidebarHtml.html`**
 
 1.  In the Apps Script editor, click **File > New > HTML file**.
 2.  Name the new file `SidebarHtml`.
-3.  Replace the default contents with the code in [SidebarHtml.html](SidebarHtml.html).
+3.  Replace the default contents with [SidebarHtml.html](SidebarHtml.html).
 
 ### **Step 4: Create `appsscript.json` (Manifest File)**
 
 1.  In the Apps Script editor, click **Project Settings** (the gear icon ⚙️ on the left sidebar).
 2.  Scroll down and check the box that says **"Show 'appsscript.json' manifest file in editor"**.
 3.  Go back to the editor (the code icon `< >` on the left sidebar). You should now see `appsscript.json` in your file list.
-4.  Replace the default contents with the code in [appsscript.json](appsscript.json).
+4.  Replace the default contents with [appsscript.json](appsscript.json).
 
 ### **Step 5: Save and Run `onOpen()`**
 
