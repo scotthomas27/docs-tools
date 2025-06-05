@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+    <html>
+      <head>
+        <base target="_top">
+        <style>
+          body { font-family: sans-serif; padding: 10px; }
+          h3 { margin-top: 20px; }
+          ul { list-style-type: none; padding: 0; }
+          li { margin-bottom: 5px; }
+          .section-title { font-weight: bold; margin-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <h2>Hemingway Helper Analysis</h2>
+        <p><strong>Word Count:</strong> <?= wordCount ?></p>
+        <p><strong>Sentence Count:</strong> <?= sentenceCount ?></p>
+        <p><strong>Readability Grade Level (ARI):</strong> <?= ari ?></p>
+
+        <h3>Adverbs (<?= adverbs.length ?>)</h3>
+        <? if (adverbs.length > 0) { ?>
+          <ul>
+            <? for (let i = 0; i < adverbs.length; i++) { ?>
+              <li><?= adverbs[i] ?></li>
+            <? } ?>
+          </ul>
+        <? } else { ?>
+          <p>No adverbs found.</p>
+        <? } ?>
+
+        <h3>Passive Voice Sentences (<?= passiveSentences.length ?>)</h3>
+        <? if (passiveSentences.length > 0) { ?>
+          <ul>
+            <? for (let i = 0; i < passiveSentences.length; i++) { ?>
+              <li><?= passiveSentences[i] ?></li>
+            <? } ?>
+          </ul>
+        <? } else { ?>
+          <p>No passive voice found.</p>
+        <? } ?>
+
+        <h3>Complex Words (<?= complexWords.length ?>)</h3>
+        <? if (complexWords.length > 0) { ?>
+          <ul>
+            <? for (let i = 0; i < complexWords.length; i++) { ?>
+              <li><?= complexWords[i] ?></li>
+            <? } ?>
+          </ul>
+        <? } else { ?>
+          <p>No complex words found.</p>
+        <? } ?>
+
+      </body>
+    </html>
