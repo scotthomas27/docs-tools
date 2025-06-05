@@ -41,4 +41,4 @@ This setup allows the "Hemingway Helper" to run directly from within a specific 
 
 The first time you run it in a document, you will likely be prompted to authorize the script. Follow the authorization steps: select your Google account, click "Advanced," "Go to [Your Script Name] (unsafe)," and "Allow."
 
-After authorization, the "Hemingway Helper" menu item should appear under "Extensions", and selecting "Analyze Document" should open the sidebar with the analysis.
+After authorization, the "Hemingway Helper" menu item should appear, and selecting "Analyze Document" should open the sidebar with the analysis.
