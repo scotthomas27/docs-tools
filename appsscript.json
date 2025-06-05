@@ -1,0 +1,25 @@
+ {
+      "timeZone": "Australia/Brisbane",
+      "dependencies": {},
+      "exceptionLogging": "STACKDRIVER",
+      "runtimeVersion": "V8",
+      "oauthScopes": [
+        "[https://www.googleapis.com/auth/documents.currentonly](https://www.googleapis.com/auth/documents.currentonly)",
+        "[https://www.googleapis.com/auth/script.container.ui](https://www.googleapis.com/auth/script.container.ui)"
+      ],
+      "addOns": {
+        "common": {
+          "name": "Hemingway Helper",
+          "logoUrl": "[https://www.gstatic.com/images/branding/product/2x/apps_script_64dp.png](https://www.gstatic.com/images/branding/product/2x/apps_script_64dp.png)",
+          "homepageTrigger": {
+            "runFunction": "onHomepage",
+            "enabled": false
+          }
+        },
+        "docs": {
+          "onFileScopeGrantedTrigger": {
+            "runFunction": "onOpen"
+          }
+        }
+      }
+    }
