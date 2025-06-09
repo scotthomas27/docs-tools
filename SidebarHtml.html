@@ -1,53 +1,59 @@
 <!DOCTYPE html>
-    <html>
-      <head>
-        <base target="_top">
-        <style>
-          body { font-family: sans-serif; padding: 10px; }
-          h3 { margin-top: 20px; }
-          ul { list-style-type: none; padding: 0; }
-          li { margin-bottom: 5px; }
-          .section-title { font-weight: bold; margin-bottom: 5px; }
-        </style>
-      </head>
-      <body>
-        <h2>Hemingway Helper Analysis</h2>
-        <p><strong>Word Count:</strong> <?= wordCount ?></p>
-        <p><strong>Sentence Count:</strong> <?= sentenceCount ?></p>
-        <p><strong>Readability Grade Level (ARI):</strong> <?= ari ?></p>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; margin: 10px; font-size: 10pt; }
+      p { margin-bottom: 8px; }
+      .stat-label { font-weight: bold; }
+      .suggestion { font-style: italic; color: #555; font-size: 9pt;}
+      .highlight-yellow { background-color: #FFFF00; padding: 0 2px; }
+      .highlight-red { background-color: #FFC0CB; padding: 0 2px; }
+      .highlight-blue { background-color: #ADD8E6; padding: 0 2px; }
+      .highlight-green { background-color: #90EE90; padding: 0 2px; }
+      .highlight-purple { background-color: #E6E6FA; padding: 0 2px; }
+      h3 { margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;}
+    </style>
+  </head>
+  <body>
+    <h3>Analysis Results</h3>
+    <p><span class="stat-label">Readability:</span> <?= data.readabilityLevel ?> </p>
 
-        <h3>Adverbs (<?= adverbs.length ?>)</h3>
-        <? if (adverbs.length > 0) { ?>
-          <ul>
-            <? for (let i = 0; i < adverbs.length; i++) { ?>
-              <li><?= adverbs[i] ?></li>
-            <? } ?>
-          </ul>
-        <? } else { ?>
-          <p>No adverbs found.</p>
-        <? } ?>
+    <p><span class="stat-label">Paragraphs:</span> <?= data.paragraphs ?></p>
+    <p><span class="stat-label">Sentences:</span> <?= data.sentences ?></p>
+    <p><span class="stat-label">Words:</span> <?= data.words ?></p>
 
-        <h3>Passive Voice Sentences (<?= passiveSentences.length ?>)</h3>
-        <? if (passiveSentences.length > 0) { ?>
-          <ul>
-            <? for (let i = 0; i < passiveSentences.length; i++) { ?>
-              <li><?= passiveSentences[i] ?></li>
-            <? } ?>
-          </ul>
-        <? } else { ?>
-          <p>No passive voice found.</p>
-        <? } ?>
+    <h3>Highlights Key:</h3>
+    <p><span class="highlight-yellow">Yellow:</span> Hard to read sentence.</p>
+    <p><span class="highlight-red">Red:</span> Very hard to read sentence.</p>
+    <p><span class="highlight-blue">Blue:</span> Adverb or weakening phrase.</p>
+    <p><span class="highlight-green">Green:</span> Passive voice.</p>
+    <p><span class="highlight-purple">Purple:</span> Complex phrase.</p>
 
-        <h3>Complex Words (<?= complexWords.length ?>)</h3>
-        <? if (complexWords.length > 0) { ?>
-          <ul>
-            <? for (let i = 0; i < complexWords.length; i++) { ?>
-              <li><?= complexWords[i] ?></li>
-            <? } ?>
-          </ul>
-        <? } else { ?>
-          <p>No complex words found.</p>
-        <? } ?>
 
-      </body>
-    </html>
+    <h3>Suggestions:</h3>
+    <p>
+      <span class="stat-label">Adverbs:</span> <?= data.adverbs ?> used.
+      <span class="suggestion"><?= data.adverbSuggestion ?></span>
+    </p>
+    <p>
+      <span class="stat-label">Passive Voice:</span> <?= data.passiveVoice ?> instance<?= data.passiveVoice === 1 ? "" : "s" ?>.
+      <span class="suggestion"><?= data.passiveSuggestion ?></span>
+    </p>
+    <p>
+      <span class="stat-label">Complex Phrases:</span> <?= data.complexPhrases ?> found.
+      <span class="suggestion">Consider simplifying these.</span>
+    </p>
+     <p>
+      <span class="stat-label">Qualifiers:</span> <?= data.qualifiers ?> found.
+      <span class="suggestion">These can weaken your writing.</span>
+    </p>
+    <p>
+      <span class="stat-label">Hard Sentences:</span> <?= data.hardSentences ?> of <?= data.sentences ?>.
+    </p>
+    <p>
+      <span class="stat-label">Very Hard Sentences:</span> <?= data.veryHardSentences ?> of <?= data.sentences ?>.
+    </p>
+
+  </body>
+</html>
