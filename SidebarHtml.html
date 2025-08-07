@@ -3,57 +3,67 @@
   <head>
     <base target="_top">
     <style>
-      body { font-family: sans-serif; margin: 10px; font-size: 10pt; }
-      p { margin-bottom: 8px; }
-      .stat-label { font-weight: bold; }
-      .suggestion { font-style: italic; color: #555; font-size: 9pt;}
-      .highlight-yellow { background-color: #FFFF00; padding: 0 2px; }
-      .highlight-red { background-color: #FFC0CB; padding: 0 2px; }
-      .highlight-blue { background-color: #ADD8E6; padding: 0 2px; }
-      .highlight-green { background-color: #90EE90; padding: 0 2px; }
-      .highlight-purple { background-color: #E6E6FA; padding: 0 2px; }
-      h3 { margin-top: 15px; margin-bottom: 5px; border-bottom: 1px solid #ccc; padding-bottom: 3px;}
+      body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; }
+      .container { display: flex; flex-direction: column; gap: 10px; }
+      .card { border: 1px solid #ddd; border-radius: 4px; padding: 10px; }
+      .card-title { font-weight: bold; margin-bottom: 5px; color: #333; }
+      .card-content { display: flex; justify-content: space-between; align-items: center; }
+      .value { font-weight: bold; font-size: 16px; }
+      .suggestion { font-size: 12px; color: #666; }
+      .color-box { width: 12px; height: 12px; border: 1px solid #ccc; display: inline-block; vertical-align: middle; margin-right: 5px; }
     </style>
   </head>
   <body>
-    <h3>Analysis Results</h3>
-    <p><span class="stat-label">Readability:</span> <?= data.readabilityLevel ?> </p>
+    <div class="container">
+      <div class="card">
+        <div class="card-title">Readability</div>
+        <div class="card-content">
+          <span><?= data.readabilityLevel ?></span>
+        </div>
+      </div>
 
-    <p><span class="stat-label">Paragraphs:</span> <?= data.paragraphs ?></p>
-    <p><span class="stat-label">Sentences:</span> <?= data.sentences ?></p>
-    <p><span class="stat-label">Words:</span> <?= data.words ?></p>
+      <div class="card">
+        <div class="card-title">Text Stats</div>
+        <div>Words: <?= data.words ?></div>
+        <div>Sentences: <?= data.sentences ?></div>
+        <div>Paragraphs: <?= data.paragraphs ?></div>
+      </div>
 
-    <h3>Highlights Key:</h3>
-    <p><span class="highlight-yellow">Yellow:</span> Hard to read sentence.</p>
-    <p><span class="highlight-red">Red:</span> Very hard to read sentence.</p>
-    <p><span class="highlight-blue">Blue:</span> Adverb or weakening phrase.</p>
-    <p><span class="highlight-green">Green:</span> Passive voice.</p>
-    <p><span class="highlight-purple">Purple:</span> Complex phrase.</p>
+      <div class="card">
+        <div class="card-title">Analysis</div>
+        
+        <div class="card-content">
+          <span><span class="color-box" style="background-color: #ADD8E6;"></span>Adverbs</span>
+          <span class="value"><?= data.adverbs ?></span>
+        </div>
+        <div class="suggestion"><?= data.adverbSuggestion ?></div>
+        <hr>
 
+        <div class="card-content">
+          <span><span class="color-box" style="background-color: #90EE90;"></span>Passive Voice</span>
+          <span class="value"><?= data.passiveVoice ?></span>
+        </div>
+         <div class="suggestion"><?= data.passiveSuggestion ?></div>
+        <hr>
 
-    <h3>Suggestions:</h3>
-    <p>
-      <span class="stat-label">Adverbs:</span> <?= data.adverbs ?> used.
-      <span class="suggestion"><?= data.adverbSuggestion ?></span>
-    </p>
-    <p>
-      <span class="stat-label">Passive Voice:</span> <?= data.passiveVoice ?> instance<?= data.passiveVoice === 1 ? "" : "s" ?>.
-      <span class="suggestion"><?= data.passiveSuggestion ?></span>
-    </p>
-    <p>
-      <span class="stat-label">Complex Phrases:</span> <?= data.complexPhrases ?> found.
-      <span class="suggestion">Consider simplifying these.</span>
-    </p>
-     <p>
-      <span class="stat-label">Qualifiers:</span> <?= data.qualifiers ?> found.
-      <span class="suggestion">These can weaken your writing.</span>
-    </p>
-    <p>
-      <span class="stat-label">Hard Sentences:</span> <?= data.hardSentences ?> of <?= data.sentences ?>.
-    </p>
-    <p>
-      <span class="stat-label">Very Hard Sentences:</span> <?= data.veryHardSentences ?> of <?= data.sentences ?>.
-    </p>
+        <div class="card-content">
+          <span><span class="color-box" style="background-color: #E6E6FA;"></span>Complex Phrases</span>
+          <span class="value"><?= data.complexPhrases ?></span>
+        </div>
+        <hr>
 
+        <div class="card-content">
+          <span><span class="color-box" style="background-color: #FFFF00;"></span>Hard Sentences</span>
+          <span class="value"><?= data.hardSentences ?></span>
+        </div>
+        <hr>
+        
+        <div class="card-content">
+          <span><span class="color-box" style="background-color: #FFC0CB;"></span>Very Hard Sentences</span>
+          <span class="value"><?= data.veryHardSentences ?></span>
+        </div>
+
+      </div>
+    </div>
   </body>
 </html>
