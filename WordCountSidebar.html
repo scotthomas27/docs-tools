@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
+      .container { display: flex; flex-direction: column; gap: 12px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; background-color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+      .card-title { font-weight: bold; margin-bottom: 8px; color: #333; font-size: 1em; }
+      .card-content { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
+      .value { font-weight: bold; font-size: 1.2em; }
+      .tab-name { flex-grow: 1; text-align: left; color: #444; font-size: 0.95em;}
+      .tab-count { font-weight: normal; color: #555; font-size: 0.95em;}
+      hr { border: 0; border-top: 1px solid #eee; margin: 10px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <div class="card-title">Word Count Breakdown</div>
+        <div class="card-content">
+          <strong>Total Words:</strong>
+          <span class="value"><?= data.totalWords ?></span>
+        </div>
+        <!-- Only show the per-tab list if there is more than one tab -->
+        <? if (data.tabDetails && data.tabDetails.length > 1) { ?>
+          <hr>
+          <div class="tab-counts">
+            <? for (var i = 0; i < data.tabDetails.length; i++) { ?>
+              <div class="card-content">
+                <span class="tab-name"><?= data.tabDetails[i].name ?></span>
+                <span class="tab-count"><?= data.tabDetails[i].count ?> words</span>
+              </div>
+            <? } ?>
+          </div>
+        <? } ?>
+      </div>
+    </div>
+  </body>
+</html>
