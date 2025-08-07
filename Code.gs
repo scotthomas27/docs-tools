@@ -1,15 +1,13 @@
 /**
- * COMBINED SCRIPT
- * Merges the "Total Word Count" and "Hemingway Helper" scripts.
- * A single menu "Doc Tools" is created to house the functions from both.
+ * COMBINED SCRIPT V3
+ * Provides two separate tools: A Word Count sidebar and a Hemingway Analysis sidebar.
+ * Each is launched from its own menu item.
  */
 
 // --- GLOBAL DECLARATIONS ---
 
-// Global variable for Hemingway analysis data
 let analysisData = {};
 
-// Global constant for Hemingway highlight colors
 const HIGHLIGHT_COLORS = {
   hardSentence: '#FFFF00',    // Yellow
   veryHardSentence: '#FFC0CB',// Pinkish-red
@@ -23,51 +21,116 @@ const HIGHLIGHT_COLORS = {
 // --- MENU CREATION ---
 
 /**
- * Creates a single top-level menu when the document is opened.
+ * Creates a top-level menu with separate items for each tool.
  */
 function onOpen() {
   const ui = DocumentApp.getUi();
-  ui.createMenu('Doc Tools') // The new, single top-level menu.
-    .addItem('Count Words (All Tabs)', 'countWordsInAllTabs')  // Menu item from script 1.
-    .addSeparator() // Adds a visual line to separate the tools.
-    .addItem('Analyze Document (Hemingway)', 'runAnalysis') // Menu item from script 2.
+  ui.createMenu('Doc Tools')
+    .addItem('Show Word Count', 'showWordCountSidebar')
+    .addItem('Show Hemingway Analysis', 'showHemingwaySidebar')
+    .addSeparator()
+    .addItem('Clear Analysis Highlights', 'clearPreviousHighlights')
     .addToUi();
 }
 
 
-// --- SCRIPT 1: TOTAL WORD COUNT FUNCTIONS ---
+// --- CONTROLLER FUNCTIONS (Called by Menu) ---
 
 /**
- * Counts words in all tabs and subtabs of the document.
+ * Calculates word counts and displays them in their own dedicated sidebar.
  */
-function countWordsInAllTabs() {
+function showWordCountSidebar() {
+  const wordCountData = getWordCountData(); // Get the data
+  const htmlTemplate = HtmlService.createTemplateFromFile('WordCountSidebar.html'); // Use the new HTML file
+  htmlTemplate.data = wordCountData; // Pass data to the template
+  const htmlOutput = htmlTemplate.evaluate().setTitle('Word Count');
+  DocumentApp.getUi().showSidebar(htmlOutput);
+}
+
+/**
+ * Runs the Hemingway analysis and displays it in its own sidebar.
+ */
+function showHemingwaySidebar() {
+  // 1. Reset data and clear old highlights
+  resetAnalysisData();
+  clearPreviousHighlights();
+
+  // 2. Perform Hemingway-style analysis
+  const doc = DocumentApp.getActiveDocument();
+  const body = doc.getBody();
+  const paragraphs = body.getParagraphs();
+  analysisData.paragraphs = paragraphs.filter(p => p.getText().trim() !== "").length;
+
+  for (const paragraphElement of paragraphs) {
+    const paragraphText = paragraphElement.getText();
+    if (paragraphText.trim() !== "") {
+      processParagraph(paragraphElement, paragraphText);
+    }
+  }
+
+  // 3. Add suggestions to the data object
+  analysisData.adverbSuggestion = `Aim for ${Math.round(analysisData.paragraphs / 3) || 0} or fewer.`;
+  analysisData.passiveSuggestion = `Aim for ${Math.round(analysisData.sentences / 5) || 0} or fewer.`;
+  analysisData.readabilityLevel = calculateOverallReadability();
+
+  // 4. Show results in the Hemingway sidebar
+  const htmlTemplate = HtmlService.createTemplateFromFile('HemingwaySidebar.html'); // Use the Hemingway HTML file
+  htmlTemplate.data = analysisData;
+  const htmlOutput = htmlTemplate.evaluate().setTitle('Hemingway Analysis');
+  DocumentApp.getUi().showSidebar(htmlOutput);
+}
+
+
+// --- DATA GATHERING FUNCTIONS ---
+
+/**
+ * Calculates total word count and a per-tab breakdown.
+ * @returns {object} An object with totalWords and an array of tabDetails.
+ */
+function getWordCountData() {
   const doc = DocumentApp.getActiveDocument();
   const tabs = doc.getTabs();
   let totalWords = 0;
+  const tabDetails = [];
+
   for (let i = 0; i < tabs.length; i++) {
+    let tabWordCount = 0;
     const stack = [tabs[i]];
+    const mainTabName = `Tab ${i + 1}`;
+
     while (stack.length > 0) {
       const currentTab = stack.pop();
       const documentTab = currentTab.asDocumentTab();
       const body = documentTab.getBody();
       const text = body.getText();
-      // Ensure we don't count an empty string as one word
       if (text.trim()) {
           const words = text.trim().replace(/\s+/g, ' ').split(' ');
-          totalWords += words.length;
+          tabWordCount += words.length;
       }
       const childTabs = currentTab.getChildTabs();
       for (let j = 0; j < childTabs.length; j++) {
         stack.push(childTabs[j]);
       }
     }
+    totalWords += tabWordCount;
+    tabDetails.push({ name: mainTabName, count: tabWordCount });
   }
-  const ui = DocumentApp.getUi();
-  ui.alert('Word Count Result', 'Total word count across all tabs and nested tabs: ' + totalWords, ui.ButtonSet.OK);
+
+  return { totalWords: totalWords, tabDetails: tabDetails };
 }
 
+// --- HELPER FUNCTIONS (No changes below this line are needed) ---
 
-// --- SCRIPT 2: HEMINGWAY HELPER FUNCTIONS ---
+function clearPreviousHighlights() {
+  const doc = DocumentApp.getActiveDocument();
+  const body = doc.getBody();
+  const paragraphs = body.getParagraphs();
+  for (const paragraph of paragraphs) {
+    if (paragraph.getText().trim() !== "") {
+      paragraph.editAsText().setBackgroundColor(0, paragraph.getText().length - 1, null);
+    }
+  }
+}
 
 function calculateLevel(letters, words, sentences) {
   if (words === 0 || sentences === 0) return 0;
@@ -89,33 +152,6 @@ function getQualifyingWords() {
 
 function resetAnalysisData() {
   analysisData = {paragraphs:0,sentences:0,words:0,totalCharacters:0,hardSentences:0,veryHardSentences:0,adverbs:0,passiveVoice:0,complexPhrases:0,qualifiers:0};
-}
-
-function runAnalysis() {
-  resetAnalysisData();
-  clearPreviousHighlights();
-  const doc = DocumentApp.getActiveDocument();
-  const body = doc.getBody();
-  const paragraphs = body.getParagraphs();
-  analysisData.paragraphs = paragraphs.filter(p => p.getText().trim() !== "").length;
-  for (const paragraphElement of paragraphs) {
-    const paragraphText = paragraphElement.getText();
-    if (paragraphText.trim() !== "") {
-      processParagraph(paragraphElement, paragraphText);
-    }
-  }
-  showAnalysisResults();
-}
-
-function clearPreviousHighlights() {
-  const doc = DocumentApp.getActiveDocument();
-  const body = doc.getBody();
-  const paragraphs = body.getParagraphs();
-  for (const paragraph of paragraphs) {
-    if (paragraph.getText().trim() !== "") {
-      paragraph.editAsText().setBackgroundColor(0, paragraph.getText().length - 1, null);
-    }
-  }
 }
 
 function processParagraph(paragraphElement, paragraphText) {
@@ -293,18 +329,6 @@ function applyIssueFormatting(paragraphElement, sentenceOffsetInPara, issues, is
   });
 }
 
-function showAnalysisResults() {
-  const ui = DocumentApp.getUi();
-  const templateData = JSON.parse(JSON.stringify(analysisData));
-  templateData.adverbSuggestion = `Try to use ${Math.round(templateData.paragraphs / 3) || 0} or fewer.`;
-  templateData.passiveSuggestion = `Aim for ${Math.round(templateData.sentences / 5) || 0} or fewer.`;
-  templateData.readabilityLevel = calculateOverallReadability();
-  const htmlTemplate = HtmlService.createTemplateFromFile('SidebarHtml');
-  htmlTemplate.data = templateData;
-  const htmlOutput = htmlTemplate.evaluate().setTitle('Hemingway Analysis');
-  ui.showSidebar(htmlOutput);
-}
-
 function calculateOverallReadability() {
   if (analysisData.words === 0 || analysisData.sentences === 0 || analysisData.totalCharacters === 0) {
     return "N/A - Insufficient Text";
@@ -314,4 +338,3 @@ function calculateOverallReadability() {
   let roundedScore = Math.max(0, Math.round(score));
   return `Grade ${roundedScore} (ARI)`;
 }
-
