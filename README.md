@@ -1,12 +1,12 @@
-# Doc Tools for Google Docs
+# Writer's Multitool for Google Docs
 
-This Google Apps Script project combines three powerful, separate utilities to enhance your writing and analysis workflow directly within Google Docs. It provides a "Hemingway editor" style interface, a comprehensive word counter, and a writing session logger, each with its own dedicated sidebar.
+This Google Apps Script project combines four powerful, separate utilities to enhance your writing and analysis workflow directly within Google Docs. It provides a "Hemingway editor" style interface, a comprehensive word counter, a writing session logger, and a custom word highlighter, each with its own dedicated sidebar.
 
 ---
 
 ## Features
 
-This script adds a single "Doc Tools" menu to your Google Doc with the following functions:
+This script adds a single "Multitool" menu to your Google Doc with the following functions:
 
 ### 1. Hemingway Analyzer
 Launches a dedicated sidebar that provides real-time analysis of your document to help you craft clearer and more concise prose. When you run the analyzer, it highlights the text and the sidebar shows insights on:
@@ -24,13 +24,21 @@ Opens a separate sidebar that accurately counts the words from **every tab and s
 ### 3. Writing Habit Tracker
 Opens a sidebar that acts as a remote entry form for a Google Sheet, allowing you to log your writing sessions without leaving Google Docs.
 *   **Connects to Your Sheet:** A one-time configuration links the tool to your specific tracking spreadsheet.
-*   **Manual Data Entry:** Provides a full form to manually enter session data like date, start/stop times, XP, activity type, and notes.
-*   **Smart Pre-filling:** Automatically fills in the current date and the document's title to speed up logging.
-*   **Formula Safe:** Surgically writes data to your sheet, preserving any existing formula columns.
+*   **Persistent Form:** Remembers your data if you close the sidebar mid-session.
+*   **Manual Data Entry:** Provides a full form to manually enter session data, with "Now" buttons for easy time capture.
+*   **Formula Safe:** Surgically writes data to the correct row in your sheet, preserving any existing formula columns.
+
+### 4. Word Highlighter
+Launches a sidebar that allows you to find and apply custom styling to a list of words or phrases throughout your document.
+*   **Custom Rules:** Create a list of words or phrases and assign a unique highlight color to each.
+*   **Advanced Styling:** Apply additional formatting like bold, italic, underline, and strikethrough.
+*   **Flexible Search:** Choose to match whole words only and whether to ignore case.
+*   **Scoped Application:** Highlight words in the entire document or only within your current text selection.
+*   **Save & Load:** Save your list of rules and settings per-document, so they're ready for your next session.
 
 ## Instructions for Installation
 
-This setup allows the script to run directly from within a specific Google Document, providing a persistent "Doc Tools" menu.
+This setup allows the script to run directly from within a specific Google Document, providing a persistent "Multitool" menu.
 
 ### **Step 1: Open Your Google Doc and Access Apps Script**
 
@@ -45,7 +53,7 @@ This setup allows the script to run directly from within a specific Google Docum
 
 ### **Step 3: Create the HTML Sidebar Files**
 
-You will need to create three separate HTML files for each tool's sidebar.
+You will need to create **four** separate HTML files for each tool's sidebar.
 
 1.  **Create `WordCountSidebar.html`:**
     *   In the Apps Script editor, click the **`+`** icon next to "Files" and select **HTML**.
@@ -58,9 +66,14 @@ You will need to create three separate HTML files for each tool's sidebar.
     *   Replace its contents with the code from [HemingwaySidebar.html](HemingwaySidebar.html).
 
 3.  **Create `TrackerSidebar.html`:**
-    *   Click the **`+`** icon one more time and select **HTML**.
+    *   Click the **`+`** icon again and select **HTML**.
     *   Name this file `TrackerSidebar`.
     *   Replace its contents with the code from [TrackerSidebar.html](TrackerSidebar.html).
+
+4.  **Create `HighlighterSidebar.html`:**
+    *   Click the **`+`** icon one more time and select **HTML**.
+    *   Name this file `HighlighterSidebar`.
+    *   Replace its contents with the code from [HighlighterSidebar.html](HighlighterSidebar.html).
 
 ### **Step 4: Create `appsscript.json` (Manifest File)**
 
@@ -73,14 +86,14 @@ You will need to create three separate HTML files for each tool's sidebar.
 
 1.  Click the **"Save project"** icon (💾) in the toolbar.
 2.  Go back to your Google Doc and **refresh the page**.
-3.  A new **"Doc Tools"** menu should now appear.
+3.  A new **"Multitool"** menu should now appear.
 4.  **One-Time Tracker Setup:** Before using the tracker for the first time, you must configure it:
-    *   Go to **Doc Tools > Writing Tracker > Configure Tracker...**
+    *   Go to **Multitool > Writing Tracker > Configure Tracker...**
     *   Follow the two prompts to provide your Google Sheet URL and the exact name of the sheet/tab you want to write to.
 5.  **Access the Tools:**
     *   **Total Word Count:** Opens the word count sidebar.
     *   **Hemingway Analysis:** Opens the writing analysis sidebar.
-    *   **Clear Highlights:** Removes highlights from the Hemingway tool.
+    *   **Word Highlighter:** Opens the custom highlighting tool.
     *   **Writing Tracker > Log Writing Session:** Opens the sidebar to log your work.
 
 The first time you run the tracker, you will be prompted to grant the script new permissions to access Google Sheets. This is a standard and necessary step.
