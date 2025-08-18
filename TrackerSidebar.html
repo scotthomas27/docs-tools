@@ -15,11 +15,11 @@
       .status-message { text-align: center; padding: 8px; margin-top: 10px; border-radius: 4px; display: none; }
       .status-success { background-color: #d4edda; color: #155724; }
       .status-error { background-color: #f8d7da; color: #721c24; }
-      
-      /* NEW styles for time input with button */
       .time-input-group { display: flex; align-items: center; }
       .time-input-group input { width: 75%; }
       .time-input-group .capture-btn { width: auto; margin-left: 8px; padding: 6px 10px; font-size: 0.9em; background-color: #6c757d; }
+      /* NEW style for the autosave indicator */
+      #autosave-status { font-size: 0.8em; color: #6c757d; text-align: right; height: 1em; transition: opacity 0.5s; }
     </style>
   </head>
   <body>
@@ -27,79 +27,87 @@
       <div class="card">
         <? if (!isConfigured) { ?>
           <div class="config-notice">
-            <strong>Configuration Needed!</strong>
-            <p>Please run 'Doc Tools > Writing Tracker > Configure Tracker...' from the menu to connect your Google Sheet.</p>
+            <p>Please run 'Doc Tools > Writing Tracker > Configure Tracker...' to connect your Google Sheet.</p>
           </div>
         <? } else { ?>
           <form id="log-form">
+            <!-- Each field is now populated by the 'savedData' object if it exists -->
             <div class="form-group">
               <label for="date">Date</label>
-              <input type="text" id="date" name="date" value="<?= today ?>">
+              <input type="text" id="date" name="date" value="<?= savedData.date || today ?>">
             </div>
             <div class="form-group">
               <label for="timeStart">Time Start</label>
               <div class="time-input-group">
-                <input type="text" id="timeStart" name="timeStart" placeholder="HH:MM:SS">
+                <input type="text" id="timeStart" name="timeStart" placeholder="HH:MM:SS" value="<?= savedData.timeStart || '' ?>">
                 <button type="button" class="capture-btn" onclick="captureTime('timeStart')">Now</button>
               </div>
             </div>
              <div class="form-group">
               <label for="timeStop">Time Stop</label>
               <div class="time-input-group">
-                <input type="text" id="timeStop" name="timeStop" placeholder="HH:MM:SS">
+                <input type="text" id="timeStop" name="timeStop" placeholder="HH:MM:SS" value="<?= savedData.timeStop || '' ?>">
                 <button type="button" class="capture-btn" onclick="captureTime('timeStop')">Now</button>
               </div>
             </div>
              <div class="form-group">
               <label for="xp">XP (Word Count)</label>
-              <input type="number" id="xp" name="xp" value="0">
+              <input type="number" id="xp" name="xp" value="<?= savedData.xp || 0 ?>">
             </div>
             <div class="form-group">
               <label for="activity">Activity</label>
               <select id="activity" name="activity">
-                <option>Writing</option> <option>Editing</option> <option>Ideating</option>
-                <option>Planning</option> <option>Workflow</option> <option>Creative</option>
-                <option>Reading</option> <option>Reward</option> <option>Missed</option>
+                <option <?= savedData.activity == 'Writing' ? 'selected' : '' ?>>Writing</option>
+                <option <?= savedData.activity == 'Editing' ? 'selected' : '' ?>>Editing</option>
+                <option <?= savedData.activity == 'Ideating' ? 'selected' : '' ?>>Ideating</option>
+                <option <?= savedData.activity == 'Planning' ? 'selected' : '' ?>>Planning</option>
+                <option <?= savedData.activity == 'Workflow' ? 'selected' : '' ?>>Workflow</option>
+                <option <?= savedData.activity == 'Creative' ? 'selected' : '' ?>>Creative</option>
+                <option <?= savedData.activity == 'Reading' ? 'selected' : '' ?>>Reading</option>
+                <option <?= savedData.activity == 'Reward' ? 'selected' : '' ?>>Reward</option>
+                <option <?= savedData.activity == 'Missed' ? 'selected' : '' ?>>Missed</option>
               </select>
             </div>
             <div class="form-group">
               <label for="manuscript">Manuscript</label>
-              <input type="text" id="manuscript" name="manuscript" value="<?= manuscript ?>">
+              <input type="text" id="manuscript" name="manuscript" value="<?= savedData.manuscript || manuscript ?>">
             </div>
             <div class="form-group">
               <label for="notes">Notes</label>
-              <textarea id="notes" name="notes"></textarea>
+              <textarea id="notes" name="notes"><?= savedData.notes || '' ?></textarea>
             </div>
             <div class="form-group">
-              <label><input type="checkbox" id="isLevelUp" name="isLevelUp"> Mark as Level-Up Day</label>
+              <label><input type="checkbox" id="isLevelUp" name="isLevelUp" <?= savedData.isLevelUp ? 'checked' : '' ?>> Mark as Level-Up Day</label>
             </div>
             <button type="button" id="logButton" onclick="logSession()">Log to Sheet</button>
             <div id="status" class="status-message"></div>
+            <div id="autosave-status"></div>
           </form>
         <? } ?>
       </div>
     </div>
 
+    <!-- NEW script block with memory functions -->
     <script>
-      // NEW function to capture the current time
+      // Run this after the page loads
+      window.onload = function() {
+        // Attach a single event listener to the form that triggers on any change
+        document.getElementById('log-form').addEventListener('change', autoSaveChanges);
+      };
+
       function captureTime(fieldId) {
         const now = new Date();
-        // Pad with leading zeros to ensure HH:MM:SS format
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        document.getElementById(fieldId).value = `${hours}:${minutes}:${seconds}`;
+        const timeField = document.getElementById(fieldId);
+        timeField.value = `${hours}:${minutes}:${seconds}`;
+        // Manually trigger the 'change' event so the form auto-saves
+        timeField.dispatchEvent(new Event('change'));
       }
 
-      function logSession() {
-        const btn = document.getElementById('logButton');
-        const statusEl = document.getElementById('status');
-        btn.disabled = true;
-        btn.style.opacity = '0.6';
-        btn.textContent = 'Logging...';
-        statusEl.style.display = 'none';
-
-        const formData = {
+      function getCurrentFormData() {
+        return {
           date: document.getElementById('date').value,
           timeStart: document.getElementById('timeStart').value,
           timeStop: document.getElementById('timeStop').value,
@@ -109,6 +117,33 @@
           notes: document.getElementById('notes').value,
           isLevelUp: document.getElementById('isLevelUp').checked
         };
+      }
+
+      // This function silently saves the form's state in the background
+      function autoSaveChanges() {
+        const statusEl = document.getElementById('autosave-status');
+        statusEl.textContent = 'Saving...';
+        statusEl.style.opacity = '1';
+
+        const formData = getCurrentFormData();
+        google.script.run
+          .withSuccessHandler(function() {
+            setTimeout(function() {
+              statusEl.style.opacity = '0';
+            }, 1000); // Fade out after 1 second
+          })
+          .saveTrackerState(formData);
+      }
+      
+      function logSession() {
+        const btn = document.getElementById('logButton');
+        const statusEl = document.getElementById('status');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.textContent = 'Logging...';
+        statusEl.style.display = 'none';
+
+        const formData = getCurrentFormData();
         
         google.script.run
           .withSuccessHandler(function() {
