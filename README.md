@@ -1,6 +1,6 @@
 # Doc Tools for Google Docs
 
-This Google Apps Script project combines two powerful, separate utilities to enhance your writing and analysis workflow directly within Google Docs. It provides both a "Hemingway editor" style interface for writing feedback and a comprehensive word counter, each with its own dedicated sidebar.
+This Google Apps Script project combines three powerful, separate utilities to enhance your writing and analysis workflow directly within Google Docs. It provides a "Hemingway editor" style interface, a comprehensive word counter, and a writing session logger, each with its own dedicated sidebar.
 
 ---
 
@@ -21,9 +21,16 @@ Opens a separate sidebar that accurately counts the words from **every tab and s
 *   **Total Word Count:** A sum of all words in the document.
 *   **Per-Tab Breakdown:** A list of each top-level tab and its individual word count.
 
+### 3. Writing Habit Tracker
+Opens a sidebar that acts as a remote entry form for a Google Sheet, allowing you to log your writing sessions without leaving Google Docs.
+*   **Connects to Your Sheet:** A one-time configuration links the tool to your specific tracking spreadsheet.
+*   **Manual Data Entry:** Provides a full form to manually enter session data like date, start/stop times, XP, activity type, and notes.
+*   **Smart Pre-filling:** Automatically fills in the current date and the document's title to speed up logging.
+*   **Formula Safe:** Surgically writes data to your sheet, preserving any existing formula columns.
+
 ## Instructions for Installation
 
-This setup allows the script to run directly from within a specific Google Document, providing a persistent "Doc Tools" menu for that document.
+This setup allows the script to run directly from within a specific Google Document, providing a persistent "Doc Tools" menu.
 
 ### **Step 1: Open Your Google Doc and Access Apps Script**
 
@@ -36,36 +43,47 @@ This setup allows the script to run directly from within a specific Google Docum
 1.  In the Apps Script editor, you should see a file named `Code.gs` by default. If it has any content, delete it.
 2.  Replace the contents with the code from the [Code.gs](Code.gs) file in this repository.
 
-### **Step 3: Create `WordCountSidebar.html`**
+### **Step 3: Create the HTML Sidebar Files**
 
-1.  In the Apps Script editor, click the **`+`** icon next to "Files" and select **HTML**.
-2.  Name the new file `WordCountSidebar` (Apps Script will add the `.html` extension).
-3.  Replace the default contents with the code from [WordCountSidebar.html](WordCountSidebar.html). This file is for the word count tool's sidebar.
+You will need to create three separate HTML files for each tool's sidebar.
 
-### **Step 4: Create `HemingwaySidebar.html`**
+1.  **Create `WordCountSidebar.html`:**
+    *   In the Apps Script editor, click the **`+`** icon next to "Files" and select **HTML**.
+    *   Name the new file `WordCountSidebar`.
+    *   Replace its contents with the code from [WordCountSidebar.html](WordCountSidebar.html).
 
-1.  Click the **`+`** icon next to "Files" again and select **HTML**.
-2.  Name this new file `HemingwaySidebar`.
-3.  Replace the default contents with the code from [HemingwaySidebar.html](HemingwaySidebar.html). This file is for the writing analysis tool's sidebar.
+2.  **Create `HemingwaySidebar.html`:**
+    *   Click the **`+`** icon again and select **HTML**.
+    *   Name this file `HemingwaySidebar`.
+    *   Replace its contents with the code from [HemingwaySidebar.html](HemingwaySidebar.html).
 
-### **Step 5: Create `appsscript.json` (Manifest File)**
+3.  **Create `TrackerSidebar.html`:**
+    *   Click the **`+`** icon one more time and select **HTML**.
+    *   Name this file `TrackerSidebar`.
+    *   Replace its contents with the code from [TrackerSidebar.html](TrackerSidebar.html).
+
+### **Step 4: Create `appsscript.json` (Manifest File)**
 
 1.  In the Apps Script editor, click **Project Settings** (the gear icon ⚙️ on the left sidebar).
 2.  Check the box that says **"Show 'appsscript.json' manifest file in editor"**.
 3.  Return to the editor (the `< >` icon). You should now see `appsscript.json` in your file list.
-4.  Replace its contents with the code from [appsscript.json](appsscript.json).
+4.  Replace its contents with the code from [appsscript.json](appsscript.json). This version includes the necessary permissions to access Google Sheets.
 
-### **Step 6: Save and Use**
+### **Step 5: Save, Configure, and Use**
 
 1.  Click the **"Save project"** icon (💾) in the toolbar.
 2.  Go back to your Google Doc and **refresh the page**.
 3.  A new **"Doc Tools"** menu should now appear.
-4.  Click the menu to access the functions:
-    *   **Show Word Count:** Opens the sidebar with the total and per-tab word counts.
-    *   **Show Hemingway Analysis:** Clears old highlights, analyzes the text, and opens the writing analysis sidebar.
-    *   **Clear Analysis Highlights:** A convenience option to remove all highlights without running a new analysis.
+4.  **One-Time Tracker Setup:** Before using the tracker for the first time, you must configure it:
+    *   Go to **Doc Tools > Writing Tracker > Configure Tracker...**
+    *   Follow the two prompts to provide your Google Sheet URL and the exact name of the sheet/tab you want to write to.
+5.  **Access the Tools:**
+    *   **Total Word Count:** Opens the word count sidebar.
+    *   **Hemingway Analysis:** Opens the writing analysis sidebar.
+    *   **Clear Highlights:** Removes highlights from the Hemingway tool.
+    *   **Writing Tracker > Log Writing Session:** Opens the sidebar to log your work.
 
-The first time you run a function, you will be prompted to authorize the script. Follow the steps: select your Google account, click "Advanced," "Go to [Your Script Name] (unsafe)," and "Allow." This is standard for custom Apps Scripts.
+The first time you run the tracker, you will be prompted to grant the script new permissions to access Google Sheets. This is a standard and necessary step.
 
 ## Credits and Attribution
 
