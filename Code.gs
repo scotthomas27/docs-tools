@@ -26,13 +26,16 @@ const HIGHLIGHT_COLORS = {
 function onOpen() {
   const ui = DocumentApp.getUi();
   ui.createMenu('Doc Tools')
-    .addItem('Show Word Count', 'showWordCountSidebar')
-    .addItem('Show Hemingway Analysis', 'showHemingwaySidebar')
+    .addItem('Total Word Count', 'showWordCountSidebar')
     .addSeparator()
-    .addItem('Clear Analysis Highlights', 'clearPreviousHighlights')
+    .addItem('Hemingway Analysis', 'showHemingwaySidebar')
+    .addItem('Clear Highlights', 'clearPreviousHighlights')
+    .addSeparator()
+    .addSubMenu(ui.createMenu('Writing Tracker')
+      .addItem('Log Writing Session', 'showTrackerSidebar')
+      .addItem('Connect Tracker...', 'showTrackerConfigPrompt'))
     .addToUi();
 }
-
 
 // --- CONTROLLER FUNCTIONS (Called by Menu) ---
 
@@ -80,6 +83,133 @@ function showHemingwaySidebar() {
   DocumentApp.getUi().showSidebar(htmlOutput);
 }
 
+// --- CONTROLLERS: NEW SIMPLIFIED WRITING TRACKER ---
+
+/**
+ * Shows the simple data entry sidebar.
+ */
+function showTrackerSidebar() {
+  const htmlTemplate = HtmlService.createTemplateFromFile('TrackerSidebar.html');
+  const properties = PropertiesService.getDocumentProperties();
+  
+  // Pass configuration status and pre-filled data to the HTML template
+  htmlTemplate.isConfigured = !!properties.getProperty('trackerSheetId');
+  htmlTemplate.manuscript = DocumentApp.getActiveDocument().getName();
+  // Format date as DD/MM/YYYY for the input field
+  htmlTemplate.today = new Date().toLocaleDateString('en-AU', { timeZone: "Australia/Brisbane" });
+
+  const htmlOutput = htmlTemplate.evaluate().setTitle('Log Session');
+  DocumentApp.getUi().showSidebar(htmlOutput);
+}
+
+/**
+ * Asks for both URL and the specific Sheet Name for reliability.
+ */
+function showTrackerConfigPrompt() {
+  const ui = DocumentApp.getUi();
+  const response = ui.prompt(
+    'Configure Writing Tracker (Step 1 of 2)',
+    'Please paste the full URL of your Google Sheet tracker:',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+  
+  const url = response.getResponseText();
+  let sheetId;
+
+  try {
+    sheetId = SpreadsheetApp.openByUrl(url).getId();
+  } catch (e) {
+    ui.alert('Error', 'Could not open the spreadsheet from that URL. Please check the link and permissions.', ui.ButtonSet.OK);
+    return;
+  }
+
+  const nameResponse = ui.prompt(
+    'Configure Writing Tracker (Step 2 of 2)',
+    'Now, please enter the EXACT name of the sheet (the tab at the bottom) where your data is stored (e.g., "Sheet1" or "Writing Habit Tracking"):',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (nameResponse.getSelectedButton() == ui.Button.OK) {
+    const sheetName = nameResponse.getResponseText();
+    if (!sheetName) {
+        ui.alert('Error', 'Sheet name cannot be empty.', ui.ButtonSet.OK);
+        return;
+    }
+    const properties = PropertiesService.getDocumentProperties();
+    properties.setProperty('trackerSheetId', sheetId);
+    properties.setProperty('trackerSheetName', sheetName); // Save the specific name
+    ui.alert('Success!', `Tracker connected to sheet: "${sheetName}". You can now log your sessions.`, ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * NEW (V3.5): "Surgical" write function that avoids overwriting formula columns.
+ * Takes the form data and logs it to the correct date row, or appends it.
+ * @param {object} formData The data object from the sidebar form.
+ */
+function logSessionToSheet(formData) {
+  const properties = PropertiesService.getDocumentProperties();
+  const sheetId = properties.getProperty('trackerSheetId');
+  const sheetName = properties.getProperty('trackerSheetName');
+  
+  if (!sheetId || !sheetName) {
+    throw new Error("Tracker is not configured. Please run configuration from the menu.");
+  }
+
+  const sheet = SpreadsheetApp.openById(sheetId).getSheetByName(sheetName);
+  if (!sheet) {
+    throw new Error(`A sheet with the name "${sheetName}" was not found. Please re-run the configuration.`);
+  }
+  
+  // --- NEW LOGIC STARTS HERE ---
+
+  const dateValues = sheet.getRange("B2:B" + sheet.getLastRow()).getDisplayValues();
+  let targetRow = 0; 
+
+  for (let i = 0; i < dateValues.length; i++) {
+    if (dateValues[i][0] === formData.date && sheet.getRange(i + 2, 3).getValue() === '') {
+      targetRow = i + 2; 
+      break; 
+    }
+  }
+
+  // Define the data in two separate blocks to skip the formula columns (F-J)
+  const block1Data = [[
+    formData.isLevelUp,
+    formData.date,
+    formData.timeStart,
+    formData.timeStop,
+    formData.xp
+  ]];
+  
+  const block2Data = [[
+    formData.activity,
+    formData.manuscript,
+    formData.notes
+  ]];
+
+  if (targetRow > 0) {
+    // If we found a row, write to it surgically.
+    // Write the first block to columns A-E.
+    sheet.getRange(targetRow, 1, 1, 5).setValues(block1Data);
+    
+    // Write the second block to columns K-M (column 11 to 13).
+    sheet.getRange(targetRow, 11, 1, 3).setValues(block2Data);
+
+  } else {
+    // If we didn't find a row, we must append.
+    // To do this, we create a full row array with empty placeholders for the formulas.
+    // This is safe because it's a new row, so there are no formulas to overwrite.
+    const fullRowForAppend = [
+      formData.isLevelUp, formData.date, formData.timeStart, formData.timeStop, formData.xp,
+      '', '', '', '', '', // Placeholders for formula columns F-J
+      formData.activity, formData.manuscript, formData.notes
+    ];
+    sheet.appendRow(fullRowForAppend);
+  }
+}
 
 // --- DATA GATHERING FUNCTIONS ---
 
