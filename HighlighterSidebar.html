@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
+        .container { display: flex; flex-direction: column; height: 100vh; }
+        .rules-container { flex-grow: 1; overflow-y: auto; border: 1px solid #ccc; background-color: white; padding: 5px; }
+        .rule-row { display: flex; align-items: center; margin-bottom: 5px; gap: 5px; }
+        .rule-row input[type="text"] { flex-grow: 1; padding: 4px; }
+        .rule-row input[type="color"] { padding: 0; border: none; width: 30px; height: 24px; }
+        .delete-btn { cursor: pointer; color: #dc3545; font-weight: bold; padding: 0 8px; }
+        .controls { margin-top: 10px; }
+        .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        button { padding: 8px; font-size: 0.9em; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background-color: #e9ecef; }
+        button:hover { background-color: #dde1e5; }
+        .primary-btn { background-color: #007bff; color: white; }
+        .primary-btn:hover { background-color: #0069d9; }
+        .settings-group { border: 1px solid #ccc; border-radius: 4px; padding: 8px; margin-top: 10px; }
+        .settings-group legend { font-weight: bold; font-size: 0.9em; padding: 0 5px; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9em; }
+        #add-rule-btn { width: 100%; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h4>Word Highlighter</h4>
+        <div id="rules-list" class="rules-container">
+            <!-- Rule rows will be added here by JavaScript -->
+        </div>
+        <button id="add-rule-btn" onclick="addRuleRow()">+ Add New Rule</button>
+
+        <div class="controls">
+            <fieldset class="settings-group">
+                <legend>Other Settings</legend>
+                <div class="options">
+                    <label><input type="checkbox" id="ignore-case"> Ignore case</label>
+                    <label><input type="checkbox" id="whole-words" checked> Whole words only</label>
+                    <label><input type="checkbox" id="bold"> Bold</label>
+                    <label><input type="checkbox" id="underline"> Underline</label>
+                    <label><input type="checkbox" id="italic"> Italic</label>
+                    <label><input type="checkbox" id="strikethrough"> Strikethrough</label>
+                </div>
+            </fieldset>
+
+            <div class="button-group" style="margin-top: 15px;">
+                <button class="primary-btn" onclick="runHighlight(false)">Highlight Document</button>
+                <button onclick="runHighlight(true)">Highlight Selection</button>
+                <button onclick="runClear(false)">Clear All</button>
+                <button onclick="runClear(true)">Clear Selection</button>
+            </div>
+             <div class="button-group">
+                <button onclick="saveSettings()">Save Rules</button>
+                <button onclick="loadSettings()">Load Rules</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- Rule Management ---
+    function addRuleRow(word = '', color = '#ffff00') {
+        const list = document.getElementById('rules-list');
+        const row = document.createElement('div');
+        row.className = 'rule-row';
+        row.innerHTML = `
+            <input type="text" class="word-input" placeholder="Word or Phrase" value="${word}">
+            <input type="color" class="color-input" value="${color}">
+            <span class="delete-btn" onclick="this.parentElement.remove()">X</span>
+        `;
+        list.appendChild(row);
+    }
+
+    // --- Data Gathering ---
+    function getSettings() {
+        const rules = [];
+        document.querySelectorAll('.rule-row').forEach(row => {
+            const word = row.querySelector('.word-input').value;
+            const color = row.querySelector('.color-input').value;
+            if (word) {
+                rules.push({ word, color });
+            }
+        });
+
+        const options = {
+            ignoreCase: document.getElementById('ignore-case').checked,
+            wholeWords: document.getElementById('whole-words').checked,
+            bold: document.getElementById('bold').checked,
+            italic: document.getElementById('italic').checked,
+            underline: document.getElementById('underline').checked,
+            strikethrough: document.getElementById('strikethrough').checked
+        };
+        return { rules, options };
+    }
+
+    // --- Communication with Code.gs ---
+    function runHighlight(selectionOnly) {
+        const { rules, options } = getSettings();
+        if (rules.length === 0) return;
+        google.script.run.applyHighlights(rules, options, selectionOnly);
+    }
+
+    function runClear(selectionOnly) {
+        const { rules } = getSettings();
+        if (rules.length === 0) return;
+        // We need the rules to know WHAT to clear
+        google.script.run.clearHighlights(rules, selectionOnly);
+    }
+
+    function saveSettings() {
+        const { rules, options } = getSettings();
+        google.script.run
+            .withSuccessHandler(() => alert('Rules saved!'))
+            .saveHighlighterSettings({ rules, options });
+    }
+
+    function loadSettings() {
+        google.script.run.withSuccessHandler(settings => {
+            if (settings) {
+                // Clear existing rules before loading new ones
+                document.getElementById('rules-list').innerHTML = '';
+                settings.rules.forEach(rule => addRuleRow(rule.word, rule.color));
+                
+                // Set checkboxes
+                document.getElementById('ignore-case').checked = settings.options.ignoreCase;
+                document.getElementById('whole-words').checked = settings.options.wholeWords;
+                document.getElementById('bold').checked = settings.options.bold;
+                document.getElementById('italic').checked = settings.options.italic;
+                document.getElementById('underline').checked = settings.options.underline;
+                document.getElementById('strikethrough').checked = settings.options.strikethrough;
+            }
+        }).loadHighlighterSettings();
+    }
+
+    // --- Initial Load ---
+    window.onload = function() {
+        loadSettings();
+    };
+</script>
+</body>
+</html>
