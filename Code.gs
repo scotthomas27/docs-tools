@@ -25,15 +25,17 @@ const HIGHLIGHT_COLORS = {
  */
 function onOpen() {
   const ui = DocumentApp.getUi();
-  ui.createMenu('Doc Tools')
+  ui.createMenu('Multitool') // Using your new name
     .addItem('Total Word Count', 'showWordCountSidebar')
     .addSeparator()
     .addItem('Hemingway Analysis', 'showHemingwaySidebar')
     .addItem('Clear Highlights', 'clearPreviousHighlights')
     .addSeparator()
+    .addItem("Word Highlighter", 'showHighlighterSidebar') // New Highlighter Tool
+    .addSeparator()
     .addSubMenu(ui.createMenu('Writing Tracker')
       .addItem('Log Writing Session', 'showTrackerSidebar')
-      .addItem('Connect Tracker...', 'showTrackerConfigPrompt'))
+      .addItem('Connect Tracker...', 'showTrackerConfigPrompt')) // Renamed from 'Connect'
     .addToUi();
 }
 
@@ -86,17 +88,19 @@ function showHemingwaySidebar() {
 // --- CONTROLLERS: NEW SIMPLIFIED WRITING TRACKER ---
 
 /**
- * Shows the simple data entry sidebar.
+ * MODIFIED: Now checks for and passes saved form data to the sidebar.
  */
 function showTrackerSidebar() {
   const htmlTemplate = HtmlService.createTemplateFromFile('TrackerSidebar.html');
   const properties = PropertiesService.getDocumentProperties();
   
-  // Pass configuration status and pre-filled data to the HTML template
   htmlTemplate.isConfigured = !!properties.getProperty('trackerSheetId');
   htmlTemplate.manuscript = DocumentApp.getActiveDocument().getName();
-  // Format date as DD/MM/YYYY for the input field
   htmlTemplate.today = new Date().toLocaleDateString('en-AU', { timeZone: "Australia/Brisbane" });
+
+  // NEW: Retrieve saved form data and pass it to the template
+  const savedDataString = properties.getProperty('trackerFormData');
+  htmlTemplate.savedData = savedDataString ? JSON.parse(savedDataString) : {};
 
   const htmlOutput = htmlTemplate.evaluate().setTitle('Log Session');
   DocumentApp.getUi().showSidebar(htmlOutput);
@@ -209,6 +213,23 @@ function logSessionToSheet(formData) {
     ];
     sheet.appendRow(fullRowForAppend);
   }
+clearTrackerState();
+}
+
+/**
+ * NEW: Saves the current state of the tracker form to properties.
+ * This is called by the sidebar's JavaScript.
+ * @param {object} formData The data from the sidebar form fields.
+ */
+function saveTrackerState(formData) {
+  PropertiesService.getDocumentProperties().setProperty('trackerFormData', JSON.stringify(formData));
+}
+
+/**
+ * NEW: Clears the saved tracker form data.
+ */
+function clearTrackerState() {
+  PropertiesService.getDocumentProperties().deleteProperty('trackerFormData');
 }
 
 // --- DATA GATHERING FUNCTIONS ---
@@ -467,4 +488,125 @@ function calculateOverallReadability() {
               (0.5 * (analysisData.words / analysisData.sentences)) - 21.43;
   let roundedScore = Math.max(0, Math.round(score));
   return `Grade ${roundedScore} (ARI)`;
+}
+// --- NEW: WRITER'S HIGHLIGHTER FUNCTIONS ---
+
+function showHighlighterSidebar() {
+  const html = HtmlService.createHtmlOutputFromFile('HighlighterSidebar.html')
+      .setTitle("Word Highlighter");
+  DocumentApp.getUi().showSidebar(html);
+}
+
+function saveHighlighterSettings(settings) {
+  PropertiesService.getDocumentProperties().setProperty('highlighterSettings', JSON.stringify(settings));
+}
+
+function loadHighlighterSettings() {
+  const settingsString = PropertiesService.getDocumentProperties().getProperty('highlighterSettings');
+  return settingsString ? JSON.parse(settingsString) : { rules: [{word: '', color: '#ffff00'}], options: {wholeWords: true} };
+}
+
+/**
+ * CORRECTED (V3): Applies highlights using a reliable manual search loop.
+ * This avoids the problematic findText(pattern, from) loop.
+ */
+function applyHighlights(rules, options, selectionOnly) {
+  const doc = DocumentApp.getActiveDocument();
+  let elementsToSearch;
+
+  // Determine the scope of our search
+  if (selectionOnly) {
+    const selection = doc.getSelection();
+    if (!selection) {
+      DocumentApp.getUi().alert('Please select some text to highlight.');
+      return;
+    }
+    elementsToSearch = selection.getRangeElements().map(rangeEl => rangeEl.getElement());
+  } else {
+    elementsToSearch = [doc.getBody()];
+  }
+  
+  // Define the styles to apply from the checkboxes
+  const style = {};
+  style[DocumentApp.Attribute.BOLD] = options.bold || null;
+  style[DocumentApp.Attribute.ITALIC] = options.italic || null;
+  style[DocumentApp.Attribute.UNDERLINE] = options.underline || null;
+  style[DocumentApp.Attribute.STRIKETHROUGH] = options.strikethrough || null;
+
+  // Iterate through each rule the user has defined
+  rules.forEach(rule => {
+    if (!rule.word) return; // Skip empty rules
+
+    // Sanitize the user's word to be safe in a regular expression
+    const sanitizedWord = rule.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchPattern = options.wholeWords ? '\\b' + sanitizedWord + '\\b' : sanitizedWord;
+    const regExp = new RegExp(searchPattern, options.ignoreCase ? 'gi' : 'g');
+    
+    // Process each element in our search scope (the whole body or the selection)
+    elementsToSearch.forEach(element => {
+      // We can only search inside elements that contain text
+      if (element.asText) {
+        const textElement = element.asText();
+        const text = textElement.getText();
+        let match;
+        
+        // Use a standard, reliable JavaScript regex loop to find ALL matches
+        while ((match = regExp.exec(text)) !== null) {
+          const start = match.index;
+          const end = start + match[0].length - 1;
+          
+          if (start <= end) {
+            // Apply the background color and text styles for each match
+            textElement.setBackgroundColor(start, end, rule.color);
+            textElement.setAttributes(start, end, style);
+          }
+        }
+      }
+    });
+  });
+}
+
+/**
+ * CORRECTED (V3): Clears highlights using a reliable manual search loop.
+ */
+function clearHighlights(rules, selectionOnly) {
+  const doc = DocumentApp.getActiveDocument();
+  let elementsToSearch;
+
+  if (selectionOnly) {
+    const selection = doc.getSelection();
+    if (!selection) {
+      DocumentApp.getUi().alert('Please select some text to clear.');
+      return;
+    }
+    elementsToSearch = selection.getRangeElements().map(rangeEl => rangeEl.getElement());
+  } else {
+    elementsToSearch = [doc.getBody()];
+  }
+  
+  rules.forEach(rule => {
+    if (!rule.word) return;
+    
+    const sanitizedWord = rule.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchPattern = '\\b' + sanitizedWord + '\\b';
+    const regExp = new RegExp(searchPattern, 'gi'); // Always ignore case when clearing
+    
+    elementsToSearch.forEach(element => {
+      if (element.asText) {
+        const textElement = element.asText();
+        const text = textElement.getText();
+        let match;
+        
+        while ((match = regExp.exec(text)) !== null) {
+          const start = match.index;
+          const end = start + match[0].length - 1;
+          
+          if (start <= end) {
+            // Set background to null to clear it
+            textElement.setBackgroundColor(start, end, null);
+          }
+        }
+      }
+    });
+  });
 }
