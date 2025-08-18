@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
+      .container { display: flex; flex-direction: column; gap: 12px; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; background-color: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+      .form-group { margin-bottom: 12px; }
+      label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 0.9em; }
+      input, select, textarea { width: 95%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+      textarea { resize: vertical; min-height: 60px; }
+      button { width: 100%; padding: 10px; font-size: 1em; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #007bff; }
+      .config-notice { text-align: center; padding: 10px; background-color: #fff3cd; border: 1px solid #ffeeba; border-radius: 4px; }
+      .status-message { text-align: center; padding: 8px; margin-top: 10px; border-radius: 4px; display: none; }
+      .status-success { background-color: #d4edda; color: #155724; }
+      .status-error { background-color: #f8d7da; color: #721c24; }
+      
+      /* NEW styles for time input with button */
+      .time-input-group { display: flex; align-items: center; }
+      .time-input-group input { width: 75%; }
+      .time-input-group .capture-btn { width: auto; margin-left: 8px; padding: 6px 10px; font-size: 0.9em; background-color: #6c757d; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <? if (!isConfigured) { ?>
+          <div class="config-notice">
+            <strong>Configuration Needed!</strong>
+            <p>Please run 'Doc Tools > Writing Tracker > Configure Tracker...' from the menu to connect your Google Sheet.</p>
+          </div>
+        <? } else { ?>
+          <form id="log-form">
+            <div class="form-group">
+              <label for="date">Date</label>
+              <input type="text" id="date" name="date" value="<?= today ?>">
+            </div>
+            <div class="form-group">
+              <label for="timeStart">Time Start</label>
+              <div class="time-input-group">
+                <input type="text" id="timeStart" name="timeStart" placeholder="HH:MM:SS">
+                <button type="button" class="capture-btn" onclick="captureTime('timeStart')">Now</button>
+              </div>
+            </div>
+             <div class="form-group">
+              <label for="timeStop">Time Stop</label>
+              <div class="time-input-group">
+                <input type="text" id="timeStop" name="timeStop" placeholder="HH:MM:SS">
+                <button type="button" class="capture-btn" onclick="captureTime('timeStop')">Now</button>
+              </div>
+            </div>
+             <div class="form-group">
+              <label for="xp">XP (Word Count)</label>
+              <input type="number" id="xp" name="xp" value="0">
+            </div>
+            <div class="form-group">
+              <label for="activity">Activity</label>
+              <select id="activity" name="activity">
+                <option>Writing</option> <option>Editing</option> <option>Ideating</option>
+                <option>Planning</option> <option>Workflow</option> <option>Creative</option>
+                <option>Reading</option> <option>Reward</option> <option>Missed</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="manuscript">Manuscript</label>
+              <input type="text" id="manuscript" name="manuscript" value="<?= manuscript ?>">
+            </div>
+            <div class="form-group">
+              <label for="notes">Notes</label>
+              <textarea id="notes" name="notes"></textarea>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="isLevelUp" name="isLevelUp"> Mark as Level-Up Day</label>
+            </div>
+            <button type="button" id="logButton" onclick="logSession()">Log to Sheet</button>
+            <div id="status" class="status-message"></div>
+          </form>
+        <? } ?>
+      </div>
+    </div>
+
+    <script>
+      // NEW function to capture the current time
+      function captureTime(fieldId) {
+        const now = new Date();
+        // Pad with leading zeros to ensure HH:MM:SS format
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById(fieldId).value = `${hours}:${minutes}:${seconds}`;
+      }
+
+      function logSession() {
+        const btn = document.getElementById('logButton');
+        const statusEl = document.getElementById('status');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.textContent = 'Logging...';
+        statusEl.style.display = 'none';
+
+        const formData = {
+          date: document.getElementById('date').value,
+          timeStart: document.getElementById('timeStart').value,
+          timeStop: document.getElementById('timeStop').value,
+          xp: document.getElementById('xp').value,
+          activity: document.getElementById('activity').value,
+          manuscript: document.getElementById('manuscript').value,
+          notes: document.getElementById('notes').value,
+          isLevelUp: document.getElementById('isLevelUp').checked
+        };
+        
+        google.script.run
+          .withSuccessHandler(function() {
+            statusEl.textContent = 'Logged successfully!';
+            statusEl.className = 'status-message status-success';
+            statusEl.style.display = 'block';
+            document.getElementById('log-form').reset();
+            document.getElementById('date').value = '<?= today ?>';
+            document.getElementById('manuscript').value = '<?= manuscript ?>';
+            setTimeout(function() {
+              btn.disabled = false;
+              btn.style.opacity = '1';
+              btn.textContent = 'Log to Sheet';
+              statusEl.style.display = 'none';
+            }, 2500);
+          })
+          .withFailureHandler(function(error) {
+            statusEl.textContent = 'Error: ' + error.message;
+            statusEl.className = 'status-message status-error';
+            statusEl.style.display = 'block';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.textContent = 'Log to Sheet';
+          })
+          .logSessionToSheet(formData);
+      }
+    </script>
+  </body>
+</html>
