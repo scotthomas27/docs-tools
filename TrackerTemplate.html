@@ -1,0 +1,53 @@
+<!-- Text Input Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <input type="text" id="<?= id ?>" name="<?= id ?>" value="<?= value ?>">
+</div>
+
+<!-- Persistent Text Input Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <input type="text" id="<?= id ?>" name="<?= id ?>" value="<?= value ?>">
+</div>
+
+<!-- Date Input Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <input type="text" id="<?= id ?>" name="<?= id ?>" value="<?= value ?>">
+</div>
+
+<!-- Time Input Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <div class="time-input-group">
+        <input type="text" id="<?= id ?>" name="<?= id ?>" placeholder="HH:MM:SS" value="<?= value ?>">
+        <button type="button" class="capture-btn" onclick="captureTime('<?= id ?>')">Now</button>
+    </div>
+</div>
+
+<!-- Numeric Input Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <input type="number" id="<?= id ?>" name="<?= id ?>" value="<?= value ?>">
+</div>
+
+<!-- Checkbox Snippet -->
+<div class="form-group">
+    <label><input type="checkbox" id="<?= id ?>" name="<?= id ?>" <?= value ? 'checked' : '' ?>> <?= label ?></label>
+</div>
+
+<!-- Document Title Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <input type="text" id="<?= id ?>" name="<?= id ?>" value="<?= value ?>">
+</div>
+
+<!-- Dropdown Snippet -->
+<div class="form-group">
+    <label for="<?= id ?>"><?= label ?></label>
+    <select id="<?= id ?>" name="<?= id ?>">
+        <? for (var i = 0; i < options.length; i++) { ?>
+            <option <?= options[i] == value ? 'selected' : '' ?>><?= options[i] ?></option>
+        <? } ?>
+    </select>
+</div>
