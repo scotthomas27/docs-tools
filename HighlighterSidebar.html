@@ -2,6 +2,7 @@
 <html>
 <head>
     <base target="_top">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
         .container { display: flex; flex-direction: column; height: 100vh; }
@@ -20,6 +21,9 @@
         .settings-group legend { font-weight: bold; font-size: 0.9em; padding: 0 5px; }
         .options { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.9em; }
         #add-rule-btn { width: 100%; margin-top: 5px; }
+        /* NEW: Style for the instruction box */
+        .instruction-box { font-size: 0.85em; color: #6c757d; margin-top: 15px; padding: 8px; background-color: #e9ecef; border-radius: 4px; }
+        .instruction-box strong { color: #495057; }
     </style>
 </head>
 <body>
@@ -46,12 +50,16 @@
             <div class="button-group" style="margin-top: 15px;">
                 <button class="primary-btn" onclick="runHighlight(false)">Highlight Document</button>
                 <button onclick="runHighlight(true)">Highlight Selection</button>
-                <button onclick="runClear(false)">Clear All</button>
-                <button onclick="runClear(true)">Clear Selection</button>
+                <!-- The two "Clear" buttons have been removed from here -->
             </div>
              <div class="button-group">
                 <button onclick="saveSettings()">Save Rules</button>
                 <button onclick="loadSettings()">Load Rules</button>
+            </div>
+
+            <!-- NEW: Instruction box for clearing highlights -->
+            <div class="instruction-box">
+                <strong>To clear highlights:</strong> Select the text, click the Google Docs "Highlight color" icon in the toolbar, and choose "None".
             </div>
         </div>
     </div>
@@ -99,12 +107,7 @@
         google.script.run.applyHighlights(rules, options, selectionOnly);
     }
 
-    function runClear(selectionOnly) {
-        const { rules } = getSettings();
-        if (rules.length === 0) return;
-        // We need the rules to know WHAT to clear
-        google.script.run.clearHighlights(rules, selectionOnly);
-    }
+    // The runClear function has been removed
 
     function saveSettings() {
         const { rules, options } = getSettings();
@@ -116,11 +119,9 @@
     function loadSettings() {
         google.script.run.withSuccessHandler(settings => {
             if (settings) {
-                // Clear existing rules before loading new ones
                 document.getElementById('rules-list').innerHTML = '';
                 settings.rules.forEach(rule => addRuleRow(rule.word, rule.color));
                 
-                // Set checkboxes
                 document.getElementById('ignore-case').checked = settings.options.ignoreCase;
                 document.getElementById('whole-words').checked = settings.options.wholeWords;
                 document.getElementById('bold').checked = settings.options.bold;
