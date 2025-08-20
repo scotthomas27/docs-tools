@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <!-- NEW: Adding the SortableJS library for drag-and-drop functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
+        .instructions { font-size: 0.9em; color: #6c757d; margin-bottom: 12px; }
+        .header-row { display: flex; align-items: center; font-weight: bold; font-size: 0.8em; color: #6c757d; border-bottom: 1px solid #dee2e6; padding-bottom: 5px; margin-bottom: 5px; gap: 8px; }
+        .header-col-1 { width: 50px; }
+        .header-col-2 { width: 30px; }
+        .header-col-3 { flex-grow: 1; }
+        .header-col-4 { width: 140px; }
+        .mapping-container { height: 250px; overflow-y: auto; border: 1px solid #ccc; background-color: white; padding: 8px; }
+        .map-row { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; padding: 4px; border: 1px solid #eee; border-radius: 4px; }
+        .map-row:hover { background-color: #f0f0f0; }
+        .map-col-1 { width: 50px; text-align: center; }
+        .map-col-2 { width: 30px; text-align: center; cursor: grab; color: #aaa; }
+        .map-col-3 { flex-grow: 1; font-weight: bold; }
+        .map-col-4 { width: 140px; }
+        .map-row select { width: 100%; padding: 4px; }
+        button { width: 100%; padding: 10px; font-size: 1em; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; margin-top: 10px; }
+        /* NEW: Styles for the dropdown options input */
+        .dropdown-options { display: none; margin-top: 4px; }
+        .dropdown-options input { width: 95%; padding: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h4>Tracker Column Configuration</h4>
+    <p class="instructions">
+        Check columns to include, choose a field type for each, and drag to reorder.
+    </p>
+    
+    <div class="header-row">
+        <div class="header-col-1">Include?</div>
+        <div class="header-col-2">Order</div>
+        <div class="header-col-3">Your Column</div>
+        <div class="header-col-4">Field Type</div>
+    </div>
+
+    <div id="mapping-list" class="mapping-container">
+        <? for (var i = 0; i < headers.length; i++) { ?>
+            <div class="map-row" data-column-name="<?= headers[i] ?>">
+                <div class="map-col-1">
+                    <input type="checkbox" class="include-check" checked>
+                </div>
+                <div class="map-col-2"> <span>☰</span> </div>
+                <div class="map-col-3"> <?= headers[i] ?> </div>
+                <div class="map-col-4">
+                    <select class="type-select" onchange="handleTypeChange(this)">
+                        <option value="text">Simple Text</option>
+                        <option value="persistent">Persistent (remembers last)</option>
+                        <option value="date">Date (auto-fills today)</option>
+                        <option value="time">Time (with 'Now' button)</option>
+                        <option value="numeric">Numeric</option>
+                        <option value="checkbox">Checkbox</option>
+                        <option value="title">Document Title (auto-fills)</option>
+                        <option value="dropdown">Dropdown</option> <!-- NEW -->
+                    </select>
+                    <!-- NEW: Hidden input for dropdown options -->
+                    <div class="dropdown-options">
+                        <input type="text" placeholder="Options, separated, by, commas" class="options-input">
+                    </div>
+                </div>
+            </div>
+        <? } ?>
+    </div>
+    
+    <button id="saveBtn" onclick="saveConfiguration()">Save Configuration</button>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        new Sortable(document.getElementById('mapping-list'), { animation: 150, handle: '.map-col-2' });
+
+        const rows = document.querySelectorAll('.map-row');
+        rows.forEach(row => {
+            const columnName = row.dataset.columnName.toLowerCase();
+            const select = row.querySelector('.type-select');
+            if (columnName.includes('date')) select.value = 'date';
+            else if (columnName.includes('time')) select.value = 'time';
+            else if (columnName.includes('xp') || columnName.includes('count')) select.value = 'numeric';
+            else if (columnName === '+' || columnName.includes('level up')) select.value = 'checkbox';
+            else if (columnName.includes('manuscript') || columnName.includes('title')) select.value = 'title';
+            else if (columnName.includes('activity')) select.value = 'dropdown'; // Guess dropdown for 'Activity'
+            handleTypeChange(select); // Ensure the options box shows if needed
+        });
+    });
+
+    function handleTypeChange(selectElement) {
+        const optionsDiv = selectElement.parentElement.querySelector('.dropdown-options');
+        if (selectElement.value === 'dropdown') {
+            optionsDiv.style.display = 'block';
+        } else {
+            optionsDiv.style.display = 'none';
+        }
+    }
+
+    function saveConfiguration() {
+        const btn = document.getElementById('saveBtn');
+        btn.textContent = 'Saving...';
+        btn.disabled = true;
+
+        const configMap = [];
+        document.querySelectorAll('.map-row').forEach(row => {
+            if (row.querySelector('.include-check').checked) {
+                const fieldType = row.querySelector('.type-select').value;
+                const configItem = {
+                    columnName: row.dataset.columnName,
+                    fieldType: fieldType
+                };
+                // If it's a dropdown, also save the options
+                if (fieldType === 'dropdown') {
+                    const options = row.querySelector('.options-input').value;
+                    configItem.options = options.split(',').map(s => s.trim()).filter(s => s);
+                }
+                configMap.push(configItem);
+            }
+        });
+
+        google.script.run
+            .withSuccessHandler(() => google.script.host.close())
+            .withFailureHandler(error => {
+                alert('Error: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Save Configuration';
+            })
+            .saveTrackerConfiguration(configMap);
+    }
+</script>
+</body>
+</html>
