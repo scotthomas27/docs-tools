@@ -136,7 +136,8 @@ function saveTrackerConfiguration(configMap) {
 }
 
 /**
- * DYNAMIC V2: Logs data based on the saved configuration map.
+ * DYNAMIC V2.1 (Find-or-Append Logic Restored): Logs data based on the saved config map,
+ * finding the correct date row before appending.
  */
 function logSessionToSheet(formData) {
   const properties = PropertiesService.getDocumentProperties();
@@ -153,9 +154,35 @@ function logSessionToSheet(formData) {
   
   const configMap = JSON.parse(configString);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  let targetRow = 0;
 
+  // --- NEW: Find-or-Append Logic ---
+  // 1. Find which column is our "Date" column from the user's map.
+  const dateConfig = configMap.find(item => item.fieldType === 'date');
+  
+  if (dateConfig) {
+    const dateColumnIndex = headers.indexOf(dateConfig.columnName);
+    const safeDateId = dateConfig.columnName.replace(/[^a-zA-Z0-9]/g, '');
+    const formDate = formData[safeDateId];
+
+    if (dateColumnIndex !== -1) {
+      // 2. Search that specific column for the date.
+      const dateValues = sheet.getRange(2, dateColumnIndex + 1, sheet.getLastRow() - 1, 1).getDisplayValues();
+      for (let i = 0; i < dateValues.length; i++) {
+        // Also check if ANY cell in that row has data. We look for Time Start (assuming it's column C for now as a fallback)
+        // A better check might be needed if columns are very different.
+        if (dateValues[i][0] === formDate && sheet.getRange(i + 2, 3).getValue() === '') {
+          targetRow = i + 2;
+          break;
+        }
+      }
+    }
+  }
+
+  // Create a full-size empty array for the new row
   let newRowData = new Array(headers.length).fill('');
   
+  // Place each piece of form data into the correct column based on the map
   configMap.forEach(item => {
     const columnIndex = headers.indexOf(item.columnName);
     if (columnIndex !== -1) {
@@ -164,7 +191,21 @@ function logSessionToSheet(formData) {
     }
   });
   
-  sheet.appendRow(newRowData);
+  // 3. Decide whether to write to the found row or append a new one.
+  if (targetRow > 0) {
+    // We found a target row. We must do a "surgical write" to preserve formulas.
+    configMap.forEach(item => {
+      const columnIndex = headers.indexOf(item.columnName);
+      if (columnIndex !== -1) {
+        const safeId = item.columnName.replace(/[^a-zA-Z0-9]/g, '');
+        // Write each value to its cell individually.
+        sheet.getRange(targetRow, columnIndex + 1).setValue(formData[safeId]);
+      }
+    });
+  } else {
+    // No target row found, so it's safe to append the whole array.
+    sheet.appendRow(newRowData);
+  }
   
   clearTrackerState();
 }
@@ -240,6 +281,7 @@ function getLastValueFromColumn(sheetId, sheetName, columnName) {
  * Helper function to build the final HTML for the dynamic sidebar.
  */
 function buildFinalSidebarHtml(formHtml, configMap) {
+  // Create a list of all form field IDs for our JavaScript functions
   const fieldIds = configMap.map(item => item.columnName.replace(/[^a-zA-Z0-9]/g, ''));
 
   return `
@@ -311,11 +353,29 @@ function buildFinalSidebarHtml(formHtml, configMap) {
         }
         function logSession() {
             const btn = document.getElementById('logButton');
+            const statusEl = document.getElementById('status');
             btn.disabled = true;
             btn.textContent = 'Logging...';
             const formData = getCurrentFormData();
             google.script.run
-              .withSuccessHandler(() => google.script.host.close())
+              // --- THIS IS THE REVERTED CODE ---
+              .withSuccessHandler(function() {
+                statusEl.textContent = 'Logged successfully!';
+                statusEl.className = 'status-message status-success';
+                statusEl.style.display = 'block';
+                document.getElementById('log-form').reset();
+                // This is a bit tricky since the form is dynamic, so we just clear it
+                // and let the user re-open for a fresh pre-filled form.
+
+                setTimeout(function() {
+                  btn.disabled = false;
+                  btn.textContent = 'Log to Sheet';
+                  statusEl.style.display = 'none';
+                  // To see the new pre-filled form, the user should re-open the sidebar.
+                  // We can't easily repopulate dynamically here without reloading.
+                }, 2500);
+              })
+              // --- END OF REVERTED CODE ---
               .withFailureHandler(err => {
                   alert('Error: ' + err.message);
                   btn.disabled = false;
