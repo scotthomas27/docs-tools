@@ -2,7 +2,6 @@
 <html>
 <head>
     <base target="_top">
-    <!-- NEW: Adding the SortableJS library for drag-and-drop functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 12px; font-size: 14px; background-color: #f8f9fa; }
@@ -20,8 +19,10 @@
         .map-col-3 { flex-grow: 1; font-weight: bold; }
         .map-col-4 { width: 140px; }
         .map-row select { width: 100%; padding: 4px; }
-        button { width: 100%; padding: 10px; font-size: 1em; color: white; border: none; border-radius: 4px; cursor: pointer; background-color: #28a745; margin-top: 10px; }
-        /* NEW: Styles for the dropdown options input */
+        button { width: 100%; padding: 10px; font-size: 1em; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        .btn-save { background-color: #28a745; }
+        /* NEW: Styles for the disconnect button */
+        .btn-disconnect { background-color: #6c757d; font-size: 0.9em; padding: 8px; }
         .dropdown-options { display: none; margin-top: 4px; }
         .dropdown-options input { width: 95%; padding: 4px; font-size: 0.9em; }
     </style>
@@ -42,9 +43,7 @@
     <div id="mapping-list" class="mapping-container">
         <? for (var i = 0; i < headers.length; i++) { ?>
             <div class="map-row" data-column-name="<?= headers[i] ?>">
-                <div class="map-col-1">
-                    <input type="checkbox" class="include-check" checked>
-                </div>
+                <div class="map-col-1"> <input type="checkbox" class="include-check" checked> </div>
                 <div class="map-col-2"> <span>☰</span> </div>
                 <div class="map-col-3"> <?= headers[i] ?> </div>
                 <div class="map-col-4">
@@ -56,9 +55,8 @@
                         <option value="numeric">Numeric</option>
                         <option value="checkbox">Checkbox</option>
                         <option value="title">Document Title (auto-fills)</option>
-                        <option value="dropdown">Dropdown</option> <!-- NEW -->
+                        <option value="dropdown">Dropdown</option>
                     </select>
-                    <!-- NEW: Hidden input for dropdown options -->
                     <div class="dropdown-options">
                         <input type="text" placeholder="Options, separated, by, commas" class="options-input">
                     </div>
@@ -67,7 +65,9 @@
         <? } ?>
     </div>
     
-    <button id="saveBtn" onclick="saveConfiguration()">Save Configuration</button>
+    <button id="saveBtn" class="btn-save" onclick="saveConfiguration()">Save Configuration</button>
+    <!-- NEW: Disconnect button -->
+    <button id="disconnectBtn" class="btn-disconnect" onclick="disconnectTracker()">Disconnect & Start Over...</button>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
@@ -82,18 +82,14 @@
             else if (columnName.includes('xp') || columnName.includes('count')) select.value = 'numeric';
             else if (columnName === '+' || columnName.includes('level up')) select.value = 'checkbox';
             else if (columnName.includes('manuscript') || columnName.includes('title')) select.value = 'title';
-            else if (columnName.includes('activity')) select.value = 'dropdown'; // Guess dropdown for 'Activity'
-            handleTypeChange(select); // Ensure the options box shows if needed
+            else if (columnName.includes('activity')) select.value = 'dropdown';
+            handleTypeChange(select);
         });
     });
 
     function handleTypeChange(selectElement) {
         const optionsDiv = selectElement.parentElement.querySelector('.dropdown-options');
-        if (selectElement.value === 'dropdown') {
-            optionsDiv.style.display = 'block';
-        } else {
-            optionsDiv.style.display = 'none';
-        }
+        optionsDiv.style.display = (selectElement.value === 'dropdown') ? 'block' : 'none';
     }
 
     function saveConfiguration() {
@@ -105,11 +101,7 @@
         document.querySelectorAll('.map-row').forEach(row => {
             if (row.querySelector('.include-check').checked) {
                 const fieldType = row.querySelector('.type-select').value;
-                const configItem = {
-                    columnName: row.dataset.columnName,
-                    fieldType: fieldType
-                };
-                // If it's a dropdown, also save the options
+                const configItem = { columnName: row.dataset.columnName, fieldType: fieldType };
                 if (fieldType === 'dropdown') {
                     const options = row.querySelector('.options-input').value;
                     configItem.options = options.split(',').map(s => s.trim()).filter(s => s);
@@ -126,6 +118,30 @@
                 btn.textContent = 'Save Configuration';
             })
             .saveTrackerConfiguration(configMap);
+    }
+
+    /**
+     * NEW: Calls the backend to delete all tracker properties.
+     */
+    function disconnectTracker() {
+        if (!confirm("Are you sure you want to disconnect the tracker? This will erase your column configuration.")) {
+            return;
+        }
+        const btn = document.getElementById('disconnectBtn');
+        btn.textContent = 'Disconnecting...';
+        btn.disabled = true;
+
+        google.script.run
+            .withSuccessHandler(() => {
+                alert("Tracker disconnected. Please run 'Configure Tracker...' again to connect a new sheet.");
+                google.script.host.close();
+            })
+            .withFailureHandler(err => {
+                alert("Error: " + err.message);
+                btn.disabled = false;
+                btn.textContent = 'Disconnect & Start Over...';
+            })
+            .disconnectAndResetTracker();
     }
 </script>
 </body>
