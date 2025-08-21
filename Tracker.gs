@@ -388,3 +388,13 @@ function buildFinalSidebarHtml(formHtml, configMap) {
     </html>
   `;
 }
+/**
+ * NEW: Disconnects the tracker by deleting all relevant document properties.
+ */
+function disconnectAndResetTracker() {
+  const properties = PropertiesService.getDocumentProperties();
+  properties.deleteProperty('trackerSheetId');
+  properties.deleteProperty('trackerSheetName');
+  properties.deleteProperty('trackerConfigMap');
+  properties.deleteProperty('trackerFormData');
+}
